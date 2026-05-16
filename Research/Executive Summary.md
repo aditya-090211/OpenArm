@@ -10,7 +10,7 @@ In **Joint Mechanical Design**, we detail bearing and belt choices: e.g. deep-gr
 
 Finally, the **Test Plan** outlines prototyping steps for single-joint assemblies. We will run tests for torque output (with known weights), thermal performance, current draw, and positional accuracy/backlash (comparing commanded vs. actual with an encoder or indicator). Metrics (e.g. step repeatability <0.1°, temperature <50 °C, no step loss) are defined and logged. A table of test cases and pass/fail criteria and a rough schedule (e.g. 2–3 weeks of incremental tests) is provided. Throughout, we note assumptions (e.g. link weights, target payload) and reference vendor datasheets or standard sources (Pololu, McMaster, AMS) where possible. 
 
-```md
+
 # Torque & Transmission
 
 **Intro:** Calculate worst-case joint torques by summing the moment of all masses *beyond* each joint. We assume each link is ~0.075 m long, with ~0.065 kg link mass (3 mm Al + 3D-printed parts) plus the distal motor mass (≈0.20 kg pancake, 0.30 kg standard). For vertical links, torque = *m·g·d*【24†L128-L136】. We add a safety factor of ~2.0 to account for dynamics【24†L192-L199】.
@@ -36,7 +36,7 @@ From these, even the largest static torque (~0.74 Nm at shoulder after SF) is 
 
 **Summary:** Calculated torques assume static gravity load; dynamic effects (acceleration) are covered by SF≃2【24†L192-L199】. Results indicate low required motor torque (<0.2 Nm after gearing) for all joints except base, so the chosen stepper+pulley ratios are appropriate. 
 
-```md
+
 # Actuator & Encoder Selection
 
 **Intro:** OpenArm uses stepper motors on all joints (CAN-bus stepper modules) for simplicity and cost-effectiveness. Steppers provide high holding torque at low speed and do not require complex feedback for basic operation【27†L99-L105】. We select standard NEMA-17 steppers for base/shoulder and compact pancake NEMA-17 for elbow/wrist (to reduce weight/inertia). Magnetic absolute encoders are added on later revisions for closed-loop control.
@@ -60,7 +60,7 @@ From these, even the largest static torque (~0.74 Nm at shoulder after SF) is 
 
 **Summary:** We recommend low-cost NEMA-17 steppers as specified above. Tables list typical parameters; actual parts (e.g. StepperOnline 42×48 mm models) should meet or exceed these specs. For closed-loop, high-resolution magnetic encoders (14-bit AS5047 or similar) are available from AMS【34†L1137-L1140】.
 
-```md
+
 # Power & Wiring Architecture
 
 **Intro:** The arm uses a single 24 V DC power supply (rated ~10 A to allow for all steppers at peak current). The Raspberry Pi (5 V) is fed by a DC-DC buck converter from the 24 V bus. All 24 V wiring is fused/ protected. CAN bus wiring is **daisy-chained** between nodes, per recommended best practice【9†L503-L511】.
