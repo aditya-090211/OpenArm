@@ -1,196 +1,113 @@
-# OpenArm Kinematics Simulation
+# Simulation Preview
 
-## Overview
+The current OpenArm simulation environment demonstrates the early-stage robotics software and kinematic modeling pipeline for the project.
 
-This folder contains the early kinematic simulation environment for OpenArm.
+The simulator currently includes:
+- forward kinematics visualization
+- inverse kinematics experimentation
+- workspace analysis
+- smooth trajectory interpolation
+- joint angle visualization
+- end-effector trajectory plotting
+- basic position error analysis
 
-The purpose of this simulation is to:
-- understand robotic arm kinematics
-- visualize arm movement
-- experiment with forward kinematics (FK)
-- experiment with inverse kinematics (IK)
-- develop trajectory planning systems
-- build foundational robotics software knowledge before integrating with physical hardware
-
-This simulation is part of the larger OpenArm project focused on developing affordable, modular, open-source robotic systems.
-
----
-
-# Current Arm Configuration
-
-Current simulated arm configuration:
-
-| Joint | Description |
-|---|---|
-| M1 | Shoulder Joint |
-| M2 | Elbow Joint |
-| M3 | Wrist Joint |
-
----
-
-# Current Geometry
-
-| Segment | Length |
-|---|---|
-| M1 → M2 | 75 mm |
-| M2 → M3 | 75 mm |
-| M3 → End Effector | 75 mm |
-
-Total reach:
+The current simulation is implemented using:
 ```txt
-225 mm
+GNU Octave / MATLAB
 ```
 
-The current model operates in a planar 2D configuration.
-
-Base rotation is intentionally ignored in the current simulation stage to simplify initial kinematic development.
-
----
-
-# Goals of This Simulation
-
-The current simulation is intended to help develop:
-- robotics intuition
-- understanding of arm geometry
-- coordinate system understanding
-- trajectory planning concepts
-- control system foundations
-- future integration with physical OpenArm hardware
+and is intended to act as the foundation for future:
+- motion planning
+- control systems
+- PID experimentation
+- encoder feedback integration
+- reinforcement learning experimentation
+- real hardware integration
 
 ---
 
-# Current Features
+# Current Simulation Features
 
 ## Forward Kinematics (FK)
-
-The simulator computes end-effector position using joint angles and link lengths.
-
-Forward kinematics calculates:
-```txt
-Joint Angles → End Effector Position
-```
-
-Current outputs:
+The simulator computes robotic arm position from joint angles and visualizes:
+- shoulder position
 - elbow position
 - wrist position
 - end-effector position
 
----
-
-# Forward Kinematics Equations
-
-The current simulation uses standard planar robotic arm equations:
-
-\[
-x = L_1\cos(\theta_1) + L_2\cos(\theta_1+\theta_2) + L_3\cos(\theta_1+\theta_2+\theta_3)
-\]
-
-\[
-y = L_1\sin(\theta_1) + L_2\sin(\theta_1+\theta_2) + L_3\sin(\theta_1+\theta_2+\theta_3)
-\]
-
-Where:
-- \(L_n\) = link lengths
-- \(\theta_n\) = joint angles
+This provides a mathematical model of arm movement and geometry.
 
 ---
 
-# Inverse Kinematics (IK)
+## Inverse Kinematics (IK)
+The current simulation includes a basic inverse kinematics implementation capable of:
+- solving target positions
+- estimating joint angles
+- generating reachable arm configurations
 
-The simulator also includes a basic inverse kinematics implementation.
-
-Inverse kinematics calculates:
-```txt
-Target Position → Joint Angles
-```
-
-The IK system attempts to:
-- solve reachable target positions
-- compute approximate joint angles
-- move the arm toward target coordinates
+This forms the foundation for future:
+- target-based motion control
+- teach-and-repeat systems
+- trajectory planning
 
 ---
 
-# Workspace Visualization
+## Workspace Visualization
+The simulator visualizes the reachable workspace of the current arm geometry.
 
-The simulation includes reachable workspace visualization.
-
-This helps visualize:
+This helps analyze:
 - reachable regions
 - arm limitations
 - kinematic boundaries
+- motion constraints
 
 ---
 
-# Trajectory Planning
-
-The current simulation includes basic trajectory interpolation.
+## Trajectory Planning
+The current simulation includes smooth interpolation between poses.
 
 This allows:
-- smooth arm movement
-- continuous motion between poses
+- smoother robotic motion
+- continuous path generation
 - visualization of robotic trajectories
 
-The current implementation uses simple interpolation between joint configurations.
+Future versions will expand this into:
+- motion profiling
+- acceleration limiting
+- jerk limiting
+- advanced trajectory generation
 
 ---
 
-# Why This Matters
+## Position Error Analysis
+The simulation includes basic position error calculations to compare:
+- target coordinates
+- simulated end-effector coordinates
 
-Kinematics forms the mathematical foundation of robotic motion.
-
-This simulation is intended to build understanding of:
-- robotic geometry
-- motion planning
-- coordinate systems
-- robotic control pipelines
-
-before integrating:
-- PID control
-- encoder feedback
-- real actuator control
-- reinforcement learning
-- physical hardware testing
+This forms the basis for future:
+- repeatability analysis
+- calibration systems
+- closed-loop control validation
 
 ---
 
-# Future Planned Improvements
+# Current Simulation Goals
 
-Planned future improvements include:
-- PID control simulation
-- encoder feedback integration
-- base rotation support
-- 3D visualization
-- dynamics simulation
-- gravity compensation
-- CANBUS communication integration
-- real hardware integration
-- reinforcement learning experiments
-- ROS2 integration
+The current simulation environment is intended to:
+- develop robotics intuition
+- understand robotic kinematics
+- experiment with motion planning
+- develop foundational control systems
+- validate arm geometry
+- prepare for physical hardware integration
 
----
+The simulation is intentionally focused on:
+- simplicity
+- clarity
+- educational value
+- iterative experimentation
 
-# Software Used
-
-Current simulation environment:
-- GNU Octave / MATLAB
-- basic plotting libraries
-- trigonometric kinematic modeling
-
----
-
-# Educational Purpose
-
-This simulation is intended primarily as:
-- a robotics learning environment
-- a research and experimentation platform
-- a foundation for future OpenArm control systems
-
-The project prioritizes:
-- accessibility
-- modularity
-- open-source learning
-- iterative engineering development
+rather than high-fidelity industrial simulation.
 
 ---
 
@@ -198,24 +115,52 @@ The project prioritizes:
 
 Current status:
 ```txt
-Early kinematic simulation and experimentation phase
+Early-stage robotics simulation and kinematic experimentation
 ```
 
-The simulation and physical OpenArm hardware will continue evolving together throughout development.
+The simulation and physical OpenArm hardware are intended to evolve together throughout development.
 
 ---
 
-# Repository Structure
+# Planned Future Improvements
 
-```txt
-/Simulation
-    openarm_kinematics.m
-    README.md
-    images/
-```
+## Planned Features
+- PID control simulation
+- encoder feedback integration
+- real CANBUS communication
+- physical hardware integration
+- base rotation support
+- 3D simulation
+- ROS2 experimentation
+- reinforcement learning experimentation
+- gravity compensation
+- dynamics simulation
+- collision visualization
+- real-time hardware synchronization
 
 ---
 
-# License
+# Screenshots
 
-This project is part of the OpenArm open-source robotics initiative.
+## Forward Kinematics Visualization
+(Add screenshot here)
+
+---
+
+## Workspace Visualization
+(Add screenshot here)
+
+---
+
+## Smooth Motion Trajectory
+(Add screenshot here)
+
+---
+
+## Joint Angle Graphs
+(Add screenshot here)
+
+---
+
+## End Effector Trajectory
+(Add screenshot here)
