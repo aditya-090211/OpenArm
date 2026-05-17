@@ -10,5 +10,6 @@ This also allows anyone viewing the project to:
 * inspect assemblies and part relationships
 * download individual components
 * export parts in their preferred file format
+* Make a copy of the document to add required modifications that anyone may need
 
 The goal is to keep the CAD workflow as open, accessible, and maintainable as possible throughout development.
