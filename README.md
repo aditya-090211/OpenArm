@@ -187,7 +187,7 @@ This project is licensed under the MIT License.
 
 # Status
 
-OpenArm is currently under active development.
+OpenArm is currently under active development. Actively trying to reduce cost, before physicaaly buying the components and bulding the arm.
 
 ---
 
