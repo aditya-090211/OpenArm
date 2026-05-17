@@ -1,4 +1,13 @@
 # OpenArm
+# OpenArm
+
+<p align="center">
+  <img src="photos/current cad/OpenArm(1).png" width="700"/>
+</p>
+
+<p align="center">
+Lightweight Open-Source Direct-Drive Robotic Arm Platform
+</p>
 
 ## Open-Source Affordable Robotic Arm Platform
 
