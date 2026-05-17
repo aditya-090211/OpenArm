@@ -34,7 +34,54 @@ OpenArm aims to create a robotic arm platform that is:
 The long-term goal is to help make robotics education more accessible globally, especially in communities where access to engineering resources is limited by cost.
 
 ---
+---
 
+# Current Design
+
+The current OpenArm design is focused on:
+- lightweight direct-drive architecture
+- modular actuator packaging
+- low backlash
+- encoder-supported closed-loop control
+- CANBUS-based distributed communication
+- educational accessibility
+- open-source development
+
+## Current Geometry
+
+| Segment | Length |
+|---|---|
+| M1 → M2 | 75 mm |
+| M2 → M3 | 75 mm |
+| M3 → End Effector | 75 mm |
+
+Current total reach:
+```txt
+225 mm
+```
+
+## Current Hardware Direction
+- NEMA17 stepper motors
+- Lightweight distal joints
+- Bearing-supported joints
+- Aluminum-reinforced structure
+- PETG / Nylon-CF structural components
+- CANBUS-Stepper actuator architecture
+
+## Current Development Status
+The project is currently in:
+```txt
+Early mechanical, simulation, and control-system development
+```
+
+The current focus areas include:
+- CAD refinement
+- kinematics
+- inverse kinematics
+- trajectory planning
+- control systems research
+- actuator testing
+- lightweight structural optimization
 # Project Background
 
 This project began in 2023 with extremely simple robotic arm prototypes made using:
