@@ -1,8 +1,6 @@
 # OpenArm
-# OpenArm
-
 <p align="center">
-  <img src="photos/current cad/OpenArm(1).png" width="700"/>
+  <img src="Photos/current cad/OpenArm (1).png" width="700"/>
 </p>
 
 <p align="center">
