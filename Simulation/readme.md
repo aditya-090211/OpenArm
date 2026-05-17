@@ -142,25 +142,4 @@ The simulation and physical OpenArm hardware are intended to evolve together thr
 
 # Screenshots
 
-## Forward Kinematics Visualization
-(Add screenshot here)
-
----
-
-## Workspace Visualization
-(Add screenshot here)
-
----
-
-## Smooth Motion Trajectory
-(Add screenshot here)
-
----
-
-## Joint Angle Graphs
-(Add screenshot here)
-
----
-
-## End Effector Trajectory
-(Add screenshot here)
+all screenshots of the octave simulation are in the screenshots folder
