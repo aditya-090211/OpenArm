@@ -7,20 +7,20 @@ This document contains ongoing torque calculations, weight analysis, and actuato
 The purpose of this document is to:
 - estimate required joint torque
 - validate actuator selection
-- analyze mass distribution
+- analyze weight distribution
 - guide future mechanical revisions
 - estimate future performance limitations
-- understand the tradeoffs between weight, stiffness, and motion performance
+- understand tradeoffs between weight, stiffness, and motion quality
 
-This document is intended to evolve continuously throughout development as more testing and prototyping is completed.
+This document is expected to evolve continuously throughout development as more testing and prototyping is completed.
 
 ---
 
 # Current OpenArm Architecture
 
-## Current Design Direction
+## Current Design Philosophy
 
-The current OpenArm architecture is focused on:
+The current OpenArm architecture prioritizes:
 - lightweight construction
 - compact actuator packaging
 - direct-drive joint architecture
@@ -29,127 +29,115 @@ The current OpenArm architecture is focused on:
 - educational accessibility
 - manufacturability
 
-The arm currently uses:
+The current system uses:
 - NEMA17 stepper motors
-- CANBUS-Stepper control architecture
+- CANBUS-Stepper controller architecture
 - encoder-supported closed-loop control
 - direct-drive joints
 - bearing-supported joints
-- aluminum-reinforced structural members
+- aluminum-reinforced structures
 - 3D printed structural interfaces
 
 ---
 
 # Why Torque Calculations Matter
 
-Torque calculations are critical because robotic arms are highly affected by:
-- compounded distal mass
-- leverage
-- acceleration loads
-- structural flex
-- dynamic instability
+Torque calculations are extremely important in robotic arms because:
+- every distal gram compounds upstream torque requirements
+- leverage amplifies loads dramatically
+- dynamic motion increases motor demand
+- structural flex reduces precision and repeatability
 
-Even relatively small masses become difficult to control once placed further from the pivot point due to leverage effects.
+Even lightweight robotic systems can quickly become difficult to control if the mass distribution is poor.
 
 Proper torque estimation helps:
-- determine whether a motor is sufficient
+- validate actuator selection
 - estimate future payload capability
 - estimate acceleration limits
-- identify possible structural weaknesses
-- avoid skipped steps or instability
-- guide future actuator decisions
+- identify structural weaknesses
+- reduce skipped-step risk
+- guide future mechanical revisions
 
 ---
 
 # Current Mechanical Assumptions
 
-## Current Joint Layout
+## Current Arm Geometry
 
-The current arm geometry being analyzed:
+Current geometry being analyzed:
 
 | Parameter | Value |
 |---|---|
 | First segment length | 75 mm |
 | Second segment length | 75 mm |
-| Total reach analyzed | 150 mm |
+| Total analyzed reach | 150 mm |
 
 ---
 
 # Current Mass Estimates
 
-## Estimated Joint Mass
+## Current Estimated Arm Mass
 
-Each joint currently has an estimated mass of:
+The current estimated moving arm mass is:
 ```txt
-~170 g
+~340 g total
 ```
 
-This estimate includes:
-- stepper motor
-- CANBUS electronics
+This mass includes:
+- motors
 - bearings
+- CANBUS electronics
 - pulleys
+- structural components
 - hardware
-- printed mounting structures
 
-The current design philosophy prioritizes:
-- compactness
+The current architecture intentionally prioritizes:
 - low mass
 - reduced inertia
-- simplified assembly
-
----
-
-# Structural Material Assumptions
-
-The current structure uses:
-- 3 mm aluminum reinforcement
-- PETG / PETG-CF printed components
-
-Current aluminum profile assumptions:
-- approximately 24 mm wide
-- lightweight structural reinforcement
-- designed to improve stiffness while minimizing mass
-
-The current design attempts to balance:
-- stiffness
-- manufacturability
-- low cost
-- educational accessibility
-
----
-
-# Why Lightweight Design Is Important
-
-In robotic arms:
-- every distal gram compounds upstream torque requirements
-- heavier wrist sections dramatically increase shoulder torque requirements
-- increased mass increases vibration and inertia
-- increased inertia reduces responsiveness and smoothness
-
-Reducing mass provides several benefits:
 - smoother motion
-- reduced motor load
-- lower power consumption
+- reduced motor loading
+
+---
+
+# Important Clarification About Mass Distribution
+
+The current 340 g estimate is NOT concentrated entirely at the end of the arm.
+
+Instead:
+- the mass is distributed approximately across the full arm length
+- the structure is relatively lightweight and evenly distributed
+- the center of mass is therefore significantly closer to the shoulder pivot
+
+This dramatically reduces required shoulder torque compared to a fully distal-loaded design.
+
+---
+
+# Why Lightweight Design Is Critical
+
+Lightweight robotic arms provide several major advantages:
+- lower motor torque requirements
 - improved acceleration
+- smoother motion
+- reduced vibration
 - lower structural stress
 - reduced resonance
+- lower power consumption
 
-The current OpenArm architecture intentionally prioritizes lightweight structures to reduce these effects.
+In direct-drive robotic systems, minimizing distal mass is especially important because there is little or no gear reduction multiplying torque.
 
 ---
 
 # Shoulder Joint Torque Analysis
 
-## Current Configuration
+## Current Assumptions
 
-The shoulder joint currently supports:
-- the second arm segment
-- the elbow joint
-- the wrist system
-- distal structure mass
+Current assumptions:
+- total moving arm mass: ~340 g
+- total arm reach: 150 mm
+- mass approximately distributed across the structure
 
-This makes the shoulder one of the highest-stress joints in the system.
+Assuming a roughly distributed mass:
+- estimated center of mass ≈ 75 mm from the shoulder pivot
 
 ---
 
@@ -166,83 +154,36 @@ Where:
 
 ---
 
-# First Segment Analysis
-
-## Parameters
-
-| Parameter | Value |
-|---|---|
-| Mass | 170 g |
-| Distance from pivot | 37.5 mm |
-
----
-
 # Force Calculation
 
-Converting mass into force:
+Force due to gravity:
 
 :contentReference[oaicite:1]{index=1}
 
 \[
-0.17 \times 9.81 \approx 1.67N
+0.34 \times 9.81
+\approx 3.34N
 \]
 
----
-
-# First Segment Torque
-
-\[
-1.67 \times 0.0375 \approx 0.063Nm
-\]
-
-Estimated first segment torque:
+Estimated total force:
 ```txt
-~0.063 Nm
+~3.34 N
 ```
 
 ---
 
-# Second Segment Analysis
+# Torque Calculation
 
-## Parameters
-
-| Parameter | Value |
-|---|---|
-| Mass | 170 g |
-| Distance from pivot | 112.5 mm |
-
----
-
-# Force Calculation
+Using:
+- center of mass ≈ 75 mm
+- force ≈ 3.34 N
 
 \[
-0.17 \times 9.81 \approx 1.67N
+3.34 \times 0.075
+\approx 0.251Nm
 \]
 
----
-
-# Second Segment Torque
-
-\[
-1.67 \times 0.1125 \approx 0.188Nm
-\]
-
-Estimated second segment torque:
-```txt
-~0.188 Nm
-```
-
----
-
-# Total Estimated Static Torque
-
-## Combined Torque
-
-\[
-0.063 + 0.188 \approx 0.251Nm
-\]
-
-Estimated total static holding torque:
+Estimated shoulder torque:
 ```txt
 ~0.25 Nm
 ```
@@ -265,41 +206,40 @@ Some higher-performance variants can exceed this range.
 # Current Feasibility Conclusion
 
 Based on the current estimates:
-- a standard NEMA17 should theoretically be capable of statically holding the arm
-- current lightweight architecture appears mechanically feasible
-- direct-drive architecture appears realistic for early prototypes
+- a standard NEMA17 should theoretically be capable of statically holding the current arm structure
+- the lightweight direct-drive architecture appears mechanically feasible
+- the current torque requirements appear reasonable for an educational/research-focused robotic arm
 
 ---
 
-# Why Static Torque Is NOT Enough
+# Why Static Holding Torque Is NOT Enough
 
-Static holding torque alone is not sufficient for real robotic systems.
+Static holding torque alone does not fully represent real robotic motion requirements.
 
-Real-world robotics introduces:
+Real robotic systems also experience:
 - acceleration loads
 - inertia
-- vibration
 - resonance
-- motion instability
+- vibration
 - transient torque spikes
-- structural flex
+- dynamic instability
 
-Because of this, real robotic systems typically require:
+Because of this, real systems generally require:
 ```txt
 2–3× safety margin
 ```
 
-The current estimated desirable torque margin is:
+This improves:
+- smoothness
+- stability
+- reliability
+- acceleration capability
+- thermal performance
+
+The current target torque margin is approximately:
 ```txt
 ~0.5–0.8 Nm available torque
 ```
-
-This provides:
-- smoother acceleration
-- improved stability
-- reduced skipped-step risk
-- lower thermal stress
-- improved responsiveness
 
 ---
 
@@ -308,19 +248,17 @@ This provides:
 The current architecture includes:
 - encoder-supported closed-loop control
 
-This provides major advantages compared to traditional open-loop stepper systems.
-
-Potential benefits include:
+Compared to traditional open-loop stepper systems, this provides several advantages:
 - reduced skipped-step risk
 - improved repeatability
 - smoother low-speed motion
-- position correction
-- improved trajectory control
+- improved trajectory tracking
+- improved motion stability
 
 The encoder system is expected to significantly improve:
 - motion quality
 - repeatability
-- overall reliability
+- control precision
 
 ---
 
@@ -335,53 +273,68 @@ Advantages:
 - reduced backlash
 - simpler mechanics
 - smoother motion
-- easier maintenance
 - quieter operation
+- easier maintenance
 
 Disadvantages:
 - lower torque multiplication
-- increased motor load
 - greater sensitivity to structural flex
 - increased importance of lightweight design
 
-Because no large gear reduction is currently planned, minimizing mass becomes extremely important.
+Because there is no major reduction system currently planned, structural optimization becomes extremely important.
 
 ---
 
 # Current Expected Limitations
 
-The current likely limitations include:
+Likely future limitations include:
 - structural flex
 - vibration
 - resonance
 - limited payload capability
-- dynamic instability at high acceleration
+- dynamic instability at higher acceleration
 
-The arm is currently optimized more toward:
+The current design is primarily optimized for:
 - lightweight manipulation
-- educational use
+- educational robotics
 - research experimentation
 - smooth low-load motion
 
 rather than:
-- industrial payload handling
+- heavy industrial payloads
 
 ---
 
-# Structural Concerns
+# Structural Considerations
 
-The largest expected mechanical challenges are likely:
+The current likely structural challenges include:
 - shoulder flex
 - elbow torsion
 - bearing alignment
 - motor mount rigidity
 
-Even small amounts of flex can compound across the arm and reduce:
+Even small amounts of structural flex can significantly reduce:
 - repeatability
-- smoothness
-- end-effector accuracy
+- motion smoothness
+- end-effector precision
 
-Improving stiffness without dramatically increasing mass will be one of the primary long-term engineering challenges.
+Improving stiffness while maintaining low mass will likely become one of the most important engineering challenges for OpenArm.
+
+---
+
+# Current Material Strategy
+
+The current design uses:
+- aluminum reinforcement
+- PETG / PETG-CF structures
+- bearing-supported joints
+
+The current design philosophy attempts to balance:
+- stiffness
+- manufacturability
+- affordability
+- accessibility
+- ease of assembly
 
 ---
 
@@ -389,13 +342,13 @@ Improving stiffness without dramatically increasing mass will be one of the prim
 
 Potential future improvements:
 - carbon fiber reinforcement
-- PETG-CF or Nylon-CF structural parts
+- Nylon-CF structural components
 - dual-bearing support systems
 - improved calibration systems
-- advanced trajectory smoothing
-- dynamic motion compensation
 - gravity compensation
+- advanced trajectory smoothing
 - improved motion planning
+- dynamic compensation systems
 
 ---
 
@@ -403,33 +356,33 @@ Potential future improvements:
 
 The current development strategy prioritizes:
 - learning through iteration
+- engineering experimentation
+- modularity
 - manufacturability
 - affordability
-- modularity
 - open-source accessibility
-- educational value
 
 The project intentionally focuses on:
-- practical experimentation
-- engineering iteration
+- practical engineering
+- experimentation
+- iterative development
 - continuous refinement
 
-rather than attempting to immediately achieve industrial-grade performance.
+rather than immediately attempting industrial-grade performance.
 
 ---
 
 # Future Work
 
-Planned future analysis includes:
-- payload capability analysis
+Planned future work includes:
+- payload analysis
 - acceleration analysis
-- dynamic torque modeling
 - inertia estimation
 - resonance analysis
 - repeatability testing
+- thermal testing
 - motion smoothing evaluation
 - structural stiffness testing
-- thermal analysis
 - power consumption analysis
 
 ---
@@ -438,17 +391,24 @@ Planned future analysis includes:
 
 The current lightweight direct-drive architecture appears mechanically feasible using standard NEMA17 motors for early OpenArm prototypes.
 
-The current estimates suggest:
+Current estimates suggest:
 - standard NEMA17 motors should theoretically be capable of supporting the current lightweight structure
-- the current design direction appears reasonable for educational and research-focused robotics
-- maintaining low mass will remain critical for future performance
+- the current design direction appears realistic for educational and research-focused robotics
+- maintaining low distal mass remains extremely important
+
+The current likely limiting factors are expected to become:
+- structural stiffness
+- vibration
+- resonance
+- motion tuning
+
+rather than raw static holding torque alone.
 
 Further prototyping and testing will ultimately determine:
-- real-world motion quality
+- motion quality
 - repeatability
 - stiffness
-- smoothness
-- long-term reliability
-- practical payload limits
+- reliability
+- practical payload capability
 
 This document will continue evolving as OpenArm development progresses.
