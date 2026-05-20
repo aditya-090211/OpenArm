@@ -1,624 +1,224 @@
-# Research Notes — Kinematics, Motion Planning, and Simulation
+# Motion Planning — Research Notes
 
-## Overview
-
-This document summarizes the research, experimentation, and development process behind the OpenArm simulation and motion planning system.
-
-The goal of this phase of the project was to develop:
-- a mathematically accurate kinematic model
-- an interactive simulation environment
-- collision-aware motion planning
-- realistic trajectory generation
-- a scalable software architecture
-
-before constructing the physical robotic arm.
-
-This research phase focused heavily on:
-- robotics mathematics
-- inverse kinematics
-- trajectory planning
-- workspace analysis
-- collision detection
-- visualization systems
-- software architecture
+Development notes on the OpenArm simulation and motion planning system. Covers the progression from basic FK to the current heuristic Monte Carlo planner, including what broke along the way.
 
 ---
 
-# Why Simulation Was Developed First
+## Why Simulation Before Hardware
 
-The simulator was developed before hardware construction because:
-- physical iteration is expensive
-- design changes are frequent
-- software debugging is easier in simulation
-- collision issues can be found early
-- kinematic mistakes can be corrected before manufacturing
+The simulation was built before any hardware because physical iteration is expensive and slow. CAD changes are frequent at this stage, and it's much easier to find kinematic errors in software than after cutting aluminum.
 
-The simulation environment acts as:
-- a robotics sandbox
-- a motion planning research platform
-- a validation environment for future hardware
+The simulator serves as:
+- a sandbox for testing IK algorithms and motion planners
+- a validation environment for arm geometry before fabrication
+- a visualization tool for understanding workspace and collision behavior
+- eventually, a development environment for hardware-in-the-loop testing
 
 ---
 
-# Initial Kinematic Model
+## Development History
 
-The first versions of the simulator were purely 2D.
+### Early 2D Simulator
 
-The arm initially consisted of:
-- shoulder joint
-- elbow joint
-- wrist joint
+The first version was purely 2D — shoulder, elbow, wrist, no base rotation. Goals were minimal: prove that the IK math was correct and that the arm geometry made sense.
 
-with fixed link lengths.
+No collision checking. No trajectory planning. No visualization beyond a static plot. Just FK/IK and a workspace sweep.
 
-Early development focused on:
-- basic forward kinematics
-- endpoint positioning
-- link geometry
-- workspace visualization
+The main value was establishing that the law-of-cosines IK approach worked and catching mistakes in the shoulder offset model early.
 
-At this stage:
-- there was no collision checking
-- no trajectory planning
-- no base rotation
-- no motion optimization
+### Adding Base Rotation (3D)
 
-The primary goal was simply proving that the mathematical model worked.
+Extending to 3D introduced the cylindrical coordinate system. The key insight was to separate the problem:
+
+1. Solve base rotation from the target's XY position: $\theta_{base} = \text{atan2}(y, x)$
+2. Reduce to a 2D planar IK problem in the arm's local plane
+
+This decomposition significantly simplifies the IK solver — you never need to solve a full 3D IK system, just a 2D three-link chain.
+
+The transition to 3D also introduced the shoulder offset. The shoulder motor is not centered on the base rotation axis — it's offset by 31.64mm. Ignoring this makes the simulation visually wrong and produces incorrect reach calculations near the base.
 
 ---
 
-# Forward Kinematics Research
+## Coordinate System
 
-Forward kinematics was implemented first because it is the foundation for:
-- visualization
-- animation
-- collision detection
-- debugging
-- workspace analysis
+Target selection uses a two-step cylindrical workflow:
 
-Forward kinematics calculates the position of every joint using:
-- link lengths
-- joint angles
+**Step 1 — Top view:** User clicks to select base rotation direction and movement plane.
 
-The arm geometry is solved sequentially from the base outward.
+$$\theta_{base} = \text{atan2}(y, x)$$
 
----
+**Step 2 — Side view:** User clicks to select radial reach and height.
 
-# Link Geometry
+$$r = \text{selected radial distance}, \quad z = \text{selected height}$$
 
-The arm currently uses:
-- three primary joints
-- three primary links
+Cylindrical to Cartesian conversion:
 
-Definitions:
+$$x_t = r \cos(\theta_{base}), \quad y_t = r \sin(\theta_{base})$$
 
-$$
-L_1 = \text{shoulder link length}
-$$
-
-$$
-L_2 = \text{elbow link length}
-$$
-
-$$
-L_3 = \text{wrist link length}
-$$
-
-Joint angles:
-
-$$
-\theta_1 = \text{shoulder angle}
-$$
-
-$$
-\theta_2 = \text{elbow angle}
-$$
-
-$$
-\theta_3 = \text{wrist angle}
-$$
+This workflow maps naturally to the robot's physical structure and makes targeting easier to reason about than direct XYZ input.
 
 ---
 
-# Base Rotation
+## Inverse Kinematics
 
-The arm later evolved into a full 3D system with:
-- cylindrical coordinate motion
-- rotating base joint
+The IK solver is a standard analytical 3-link solution using the law of cosines. Full derivation in `Research/kinematics_reference.md`.
 
-The base rotation angle is:
+Target-relative coordinates (from shoulder):
 
-$$
-\theta_{base} = atan2(y, x)
-$$
+$$d_x = r - d_{offset}, \quad d_z = z_t - h_{shoulder}$$
 
-This separates:
-- planar solving
-- rotational solving
+End effector orientation:
 
-which simplifies inverse kinematics significantly.
+$$\theta_{ee} = \text{atan2}(d_z, d_x)$$
 
----
+Wrist position (subtracting L3 from end effector):
 
-# Shoulder Offset Research
+$$w_x = d_x - L_3 \cos(\theta_{ee}), \quad w_z = d_z - L_3 \sin(\theta_{ee})$$
 
-One major challenge was that the shoulder motor is not centered directly above the base axis.
+Elbow angle via law of cosines:
 
-Instead:
-- the shoulder joint is offset horizontally
-- the arm sits forward relative to the base rotation axis
+$$D = \frac{w_x^2 + w_z^2 - L_1^2 - L_2^2}{2 L_1 L_2}$$
 
-This required:
-- custom forward kinematics
-- custom cylindrical coordinate conversion
-- adjusted workspace calculations
+$$\theta_2 = \text{atan2}(\pm\sqrt{1-D^2},\ D)$$
 
-The shoulder offset is represented as:
+Shoulder angle:
 
-$$
-d_{offset}
-$$
+$$\theta_1 = \text{atan2}(w_z, w_x) - \text{atan2}(L_2\sin(\theta_2),\ L_1 + L_2\cos(\theta_2))$$
 
-Shoulder position:
+Wrist angle:
 
-$$
-x_s = d_{offset} \cos(\theta_{base})
-$$
+$$\theta_3 = \theta_{ee} - \theta_1 - \theta_2$$
 
-$$
-y_s = d_{offset} \sin(\theta_{base})
-$$
-
-$$
-z_s = h_{shoulder}
-$$
-
-This became one of the most important improvements because it made the simulation significantly more realistic relative to the actual CAD design.
+Two solutions exist (elbow-up and elbow-down). The solver selects the one with lower total angular movement from the current state.
 
 ---
 
-# Inverse Kinematics Research
+## Trajectory Interpolation
 
-After forward kinematics was functioning correctly, inverse kinematics was implemented.
+Joint angles are interpolated using cubic smoothstep rather than linear interpolation:
 
-Inverse kinematics solves:
-- required joint angles
-- from a desired target position
+$$s(t) = 3t^2 - 2t^3, \quad t \in [0, 1]$$
 
-This was one of the most mathematically intensive parts of the project.
+$$\theta(t) = \theta_{start} + s(t)(\theta_{target} - \theta_{start})$$
 
----
+This produces smooth acceleration and deceleration with zero velocity at both endpoints. Each trajectory segment uses 45 interpolation steps.
 
-# Cylindrical Coordinate System
-
-The simulator currently uses a cylindrical target selection system.
-
-Instead of selecting:
-- x
-- y
-- z
-
-directly, the workflow was redesigned into:
-- plane selection
-- radial selection
-- height selection
-
-This made interaction:
-- more intuitive
-- easier to debug
-- closer to the actual physical robot structure
-
-The cylindrical conversion equations are:
-
-$$
-x = r \cos(\theta_{base})
-$$
-
-$$
-y = r \sin(\theta_{base})
-$$
+Smoothstep is adequate for visualization but not rigorous for real hardware — it doesn't enforce velocity or acceleration limits, and has a discontinuity in acceleration at the transition points. A proper implementation would use a trapezoidal or S-curve velocity profile.
 
 ---
 
-# Wrist Position Solving
+## Collision Detection
 
-The end effector orientation is first calculated:
+Two collision volumes are checked:
 
-$$
-\theta_{ee} = atan2(d_z, d_x)
-$$
+**Ground plane:** Any link point with $z < 0$ is a collision.
 
-Then the wrist joint position is solved by subtracting the wrist link length:
+**Deadzone box:** The arm's base assembly (motors, belts, structure) occupies a physical volume that the links must not enter. Modeled as an axis-aligned bounding box:
 
-$$
-w_x = d_x - L_3 \cos(\theta_{ee})
-$$
+$$x \in [x_{min}, x_{max}], \quad y \in [y_{min}, y_{max}], \quad z \in [z_{min}, z_{max}]$$
 
-$$
-w_z = d_z - L_3 \sin(\theta_{ee})
-$$
+Current deadzone dimensions: 180mm × 100mm × 57mm, with an 8mm safety margin.
 
-This converts the arm into a simpler 2-link inverse kinematics problem.
+Each link is sampled densely (25 points per segment, 2 distal links checked) at every trajectory step:
 
----
+$$p(t) = p_{start} + t(p_{end} - p_{start}), \quad t \in [0, 1]$$
 
-# Law of Cosines
+Only the two distal links are sampled. The base link is always inside the deadzone by design.
 
-The elbow angle is solved using the law of cosines.
+### Problems Encountered
 
-$$
-D =
-\frac{
-w_x^2 + w_z^2 - L_1^2 - L_2^2
-}{
-2 L_1 L_2
-}
-$$
+**Ground penetration:** Early versions frequently drove the arm below the ground plane during transitions. Fixed by adding the ground collision check and filtering invalid configurations during path search.
 
-Elbow angle:
+**Deadzone clipping:** Some trajectories that appeared collision-free in endpoint checks were actually clipping corners of the deadzone during interpolation. Fixed by increasing sampling density and checking continuously throughout the trajectory, not just at endpoints.
 
-$$
-\theta_2 = atan2(\pm \sqrt{1-D^2}, D)
-$$
-
-This produces:
-- elbow-up solutions
-- elbow-down solutions
-
-The solver then selects the solution with the lowest movement cost relative to the current arm state.
+**Invalid reachable targets:** Some targets that were clearly within the workspace were being rejected as unreachable. This was caused by incorrect wrist orientation assumptions — the end effector angle calculation was off by a sign in some quadrants, which drove the wrist position outside the 2-link reach circle even for reachable targets.
 
 ---
 
-# Shoulder Angle
+## Heuristic Motion Planner
 
-The shoulder angle is solved using:
+A direct IK solution to the target is often not sufficient: the arm may collide during motion, or the intermediate states may be physically problematic. Instead of computing a single direct trajectory, the planner:
 
-$$
-\theta_1 =
-atan2(w_z, w_x)
--
-atan2(
-L_2 \sin(\theta_2),
-L_1 + L_2 \cos(\theta_2)
-)
-$$
+1. Generates ~1000 candidate waypoint sequences
+2. Solves IK for each waypoint
+3. Collision-checks each trajectory continuously
+4. Scores valid trajectories by cost
+5. Selects the lowest-cost valid path
 
----
+### Candidate Generation
 
-# Wrist Angle
+Seven trajectory strategies are sampled randomly per attempt:
 
-The wrist angle is calculated using:
+| Mode | Description |
+|---|---|
+| 1 | Direct trajectory to target |
+| 2 | Lift above target, then descend |
+| 3 | Retract to near-vertical, then extend |
+| 4 | Partial retract with elevation |
+| 5 | Random angle offset approach |
+| 6 | High arc over target |
+| 7 | Wide offset approach |
 
-$$
-\theta_3 =
-\theta_{ee}
--
-\theta_1
--
-\theta_2
-$$
+The random variation within each mode is important — it allows the planner to find trajectories that avoid specific obstacle configurations that a purely deterministic set of strategies would miss.
 
----
+### Path Scoring
 
-# Transition to 3D
+Each valid trajectory is scored by:
 
-One major development phase was transitioning the simulator from:
-- 2D planar motion
-to:
-- full 3D motion
+$$C = \sum |\Delta\theta_i| + \lambda \left(\frac{1}{d_{collision}}\right)$$
 
-This introduced:
-- base rotation
-- cylindrical motion planning
-- 3D visualization
-- spatial collision checking
-
-This dramatically increased:
-- complexity
-- computational load
-- collision edge cases
-
-but made the simulator significantly more realistic.
-
----
-
-# Deadzone Research
-
-The arm contains a large base assembly consisting of:
-- electronics
-- motors
-- belts
-- structural supports
-
-This created a "deadzone" volume that the arm should not enter.
-
-The deadzone is modeled as a collision box.
-
-The simulator continuously checks whether any arm segment enters this region.
-
-This became one of the most difficult parts of development because:
-- some valid trajectories clipped corners
-- some trajectories intersected during interpolation
-- certain poses became difficult to solve safely
-
----
-
-# Collision Detection
-
-Collision detection evolved through several iterations.
-
-Early versions:
-- only checked endpoint positions
-
-Later versions:
-- checked full trajectories
-- sampled link segments densely
-- checked continuous motion
-
-Each link is sampled using:
-
-$$
-p(t) =
-p_{start}
-+
-t
-(
-p_{end}
--
-p_{start}
-)
-$$
-
-where:
-
-$$
-0 \le t \le 1
-$$
-
-This significantly improved collision accuracy.
-
----
-
-# Ground Collision
-
-Ground collision is handled using:
-
-$$
-z < 0
-$$
-
-This prevents the arm from moving below the ground plane.
-
-Early versions frequently produced:
-- underground trajectories
-- invalid elbow configurations
-
-which required additional constraints.
-
----
-
-# Heuristic Motion Planning
-
-One of the largest research areas became motion planning.
-
-A direct IK solution is often not sufficient because:
-- the arm may collide during motion
-- intermediate states may be invalid
-- some trajectories are inefficient
-
-Instead of using a direct trajectory, the planner:
-- generates many candidate waypoint sets
-- computes trajectories for each
-- collision checks them
-- scores them
-- selects the best valid solution
-
-The planner currently evaluates approximately:
-
-$$
-1000
-$$
-
-candidate trajectories per target.
-
----
-
-# Monte Carlo Style Planning
-
-The planner behaves similarly to a heuristic Monte Carlo search.
-
-It tests:
-- direct paths
-- elevated arcs
-- retract-and-extend motions
-- randomized intermediate waypoints
-- lift-first trajectories
-- offset approach paths
-
-This dramatically improved:
-- reliability
-- obstacle avoidance
-- path quality
-
-although it increased computation time significantly.
-
----
-
-# Trajectory Interpolation
-
-The simulator uses smooth interpolation instead of direct angle jumps.
-
-The current interpolation function is:
-
-$$
-s(t) = 3t^2 - 2t^3
-$$
-
-This creates:
-- smooth acceleration
-- smooth deceleration
-- reduced sudden motion
-
-Joint interpolation:
-
-$$
-\theta(t) =
-\theta_{start}
-+
-s(t)
-(
-\theta_{target}
--
-\theta_{start}
-)
-$$
-
----
-
-# Path Scoring
-
-Each valid trajectory is scored based on:
-- total joint movement
-- smoothness
-- obstacle clearance
-
-Approximate scoring function:
-
-$$
-C =
-\sum
-|\Delta \theta_i|
-+
-\lambda
-\left(
-\frac{1}{d_{collision}}
-\right)
-$$
+where $d_{collision}$ is the minimum distance from any link point to the nearest collision volume boundary, and $\lambda$ is a weighting factor (currently 0.02).
 
 This encourages:
-- smaller motion
-- smoother movement
-- safer trajectories
+- minimal joint movement (smoother, more energy-efficient motion)
+- trajectories that stay farther from obstacles
+
+### Performance
+
+The planner evaluates approximately 1000 candidates per target. Each candidate involves:
+- IK solving for each waypoint (2 solutions each, pick minimum cost)
+- Full trajectory generation (45 steps per segment)
+- Dense collision checking (25 samples × 2 links × 45 steps per segment)
+
+On a typical laptop, planning takes 3–10 seconds depending on target position and trajectory complexity. This is not suitable for real-time use. It's a brute-force search, not an efficient planner.
+
+The approach was chosen because it's flexible and easy to extend. Adding a new trajectory strategy is just adding a new case to the mode switch. A proper planner (RRT, CHOMP, etc.) would be more efficient but significantly harder to implement and debug.
 
 ---
 
-# Visualization System
+## Visualization
 
-The visualization system evolved significantly throughout development.
+The simulator renders:
+- Ground plane
+- Deadzone box (semi-transparent red)
+- Full 3D arm with 4 joints
+- Target point
+- Live animation of the planned trajectory
 
-The simulator currently includes:
-- top-view target selection
-- side-view radial selection
-- live 3D animation
-- deadzone rendering
-- workspace rendering
-- trajectory playback
-- joint visualization
-
-The visualization system became extremely important for:
-- debugging
-- validating IK
-- understanding collisions
-- tuning trajectories
-
-Many major bugs were discovered visually rather than mathematically.
+The visualization turned out to be critical for debugging. Several bugs that would have been very hard to find mathematically were immediately obvious visually — like trajectories that technically passed collision checks but looked obviously wrong.
 
 ---
 
-# Major Problems Encountered
+## Current Limitations
 
-## Invalid Workspace Detection
-Some targets were incorrectly marked as unreachable even though they were clearly inside the workspace.
+**No global planner.** The current system is a heuristic search, not a mathematically complete planner. It works well for the current geometry and obstacle configuration, but there's no guarantee of finding a path when one exists.
 
-This was caused by:
-- poor wrist positioning
-- incorrect orientation assumptions
-- singular edge cases
+**No self-collision.** Links can pass through each other. This is not a problem for the current 4-DOF configuration in most configurations, but will matter as the design evolves.
 
----
+**No dynamics.** Torque limits, inertia, and acceleration constraints are not modeled. The planner will generate trajectories that are kinematically valid but might be impossible for the hardware to execute at the commanded speed.
 
-## Ground Penetration
-Early versions frequently drove the arm below the ground plane.
+**No real-time capability.** Several seconds per plan is fine for interactive use but incompatible with any real-time control application.
 
-This required:
-- trajectory constraints
-- continuous collision checking
-- additional IK filtering
+**Simplified collision geometry.** Only a box and a plane. No mesh collision, no swept-volume analysis.
 
 ---
 
-## Deadzone Clipping
-Some trajectories clipped through corners of the deadzone during interpolation.
+## Future Directions
 
-This required:
-- denser sampling
-- continuous collision testing
-- safer waypoint generation
+Things worth exploring once hardware is available:
 
----
-
-## Performance Problems
-The planner became increasingly slow as:
-- collision density increased
-- candidate count increased
-- trajectory complexity increased
-
-The current planner is computationally expensive because it brute-forces many possible trajectories.
-
-However, this approach was chosen because:
-- it is flexible
-- easy to modify
-- effective for experimentation
-
----
-
-# Current Limitations
-
-The simulator still does not include:
-- full rigid body dynamics
-- motor torque simulation
-- acceleration constraints
-- real-time replanning
-- self-collision detection
-- CAD mesh collision
-- actuator modeling
-- encoder feedback
-- hardware synchronization
-
-The current focus remains:
-- kinematics
-- motion planning
-- software architecture
-- visualization
-- research experimentation
-
----
-
-# Future Research Areas
-
-Future planned research includes:
-- PID control
-- motion profiling
-- acceleration-limited trajectories
-- spline interpolation
-- self-collision systems
-- reinforcement learning
-- real-time planning
-- hardware-in-the-loop simulation
-- computer vision
-- autonomous grasping
-- dynamic obstacle avoidance
-
----
-
-# Purpose of This Research
-
-This research phase was intended to:
-- validate arm geometry
-- test mathematical models
-- prototype motion planning systems
-- experiment with robotics algorithms
-- understand robotic arm behavior
-- create a scalable software foundation
-
-before deploying algorithms onto the physical OpenArm platform.
+- Acceleration-limited motion profiles (trapezoidal or S-curve velocity)
+- Self-collision detection using capsule approximations of each link
+- Online replanning for disturbance rejection
+- Hardware-in-the-loop simulation using CAN bus
+- RL-based trajectory optimization (see `Research/rl_vs_pid.md`)

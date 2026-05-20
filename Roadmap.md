@@ -1,105 +1,83 @@
-# OpenArm Roadmap
+# Roadmap
 
-## Current Development Focus
-
-OpenArm is currently in the early prototyping and design iteration stage.
-
-The current focus of development is centered around creating a robotic arm platform that is:
-- affordable
-- lightweight
-- modular
-- easy to manufacture
-- easy to assemble
-- open-source
-- accessible for education and experimentation
+Current thinking on where this project is going. This will change as hardware testing reveals what actually matters.
 
 ---
 
-# Mechanical Development
+## Immediate Priorities
 
-Current areas of exploration include:
-- reducing overall part count
-- improving structural rigidity
-- simplifying assembly
-- improving modularity
-- optimizing gear systems
-- reducing backlash
-- improving range of motion
-- improving manufacturability for 3D printing and low-cost fabrication
+**1. First physical prototype**
 
----
+The simulation is ahead of the hardware. Before investing in the full CAN bus stepper architecture, build a cheaper testbed using printed parts and standard servos/steppers to validate:
+- CAD-to-reality fit
+- Joint stiffness and flex
+- Belt tension and backlash
+- Whether the kinematic model matches real behavior
 
-# Motor & Actuation Research
+See `Research/test_plan.md` for the detailed test protocol.
 
-Different actuator systems are currently being explored, including:
-- servo motors
-- stepper motors
-- high-performance brushless motors
-- geared brushless systems
-- lightweight low-cost drive systems
+**2. BOM cost reduction**
 
-The goal is to find the best balance between:
-- performance
-- precision
-- cost
-- reliability
-- simplicity
-- accessibility
+The current BOM (~₹50,000) is too high for the project's accessibility goals. The most impactful change is replacing the CAN bus stepper modules with standard NEMA17 motors + separate drivers + encoders. See `BOM.md` for the full analysis. Target: ~₹15,000–20,000.
+
+**3. Encoder integration and closed-loop control**
+
+The simulation runs open-loop (joint angle commands with no feedback). The hardware needs encoder integration (likely AMS AS5600 or AS5047D magnetic encoders) and a basic PID position controller before any meaningful hardware testing is possible.
 
 ---
 
-# Electronics & Communication
+## Medium Term
 
-Current concepts being explored include:
-- modular electronics architecture
-- CAN-based communication systems
-- simplified wiring systems
-- scalable motor controller layouts
-- low-cost embedded control systems
+**Simulation improvements:**
+- Self-collision detection (capsule approximations for each link)
+- Acceleration-limited trajectory profiles (trapezoidal or S-curve velocity)
+- Joint angle limit enforcement
+- Spline-based path generation
 
-Future versions may include:
-- distributed motor control
-- sensor integration
-- encoder feedback systems
-- modular expansion support
+**Hardware development:**
+- Single-joint testbed (motor + belt + bearing + encoder)
+- CAN communication firmware
+- Multi-joint assembly and testing
+- Payload testing and backlash measurement
 
----
-
-# Software & Control Systems
-
-Planned software development includes:
-- PID-based control systems
-- motion profiling
-- inverse kinematics
-- trajectory planning
-- simulation support
-- reinforcement learning experimentation
-- robotic manipulation research
-
-The project is also exploring how reinforcement learning compares with traditional PID tuning methods for low-cost robotic systems.
+**Control systems:**
+- PID position control with encoder feedback
+- Gravity compensation
+- Characterize actual hardware imperfections (flex, backlash, friction)
+- Evaluate whether PID performance is adequate for intended use cases
 
 ---
 
-# Accessibility Goals
+## Longer Term
 
-The long-term goal of OpenArm is to make robotics more accessible globally.
+**RL and adaptive control experiments** (see `Research/rl_vs_pid.md`):
+- Characterize hardware imperfections quantitatively
+- Build a dynamics model from hardware test data
+- Evaluate sim-to-real gap
+- Run controlled comparison: PID vs. adaptive control on same hardware
+- Determine whether RL provides meaningful improvement over PID for this cost class of hardware
 
-Future plans include:
-- fully open-sourcing the platform
-- publishing assembly guides
-- developing educational resources
-- creating low-cost kit versions
-- supporting schools and students
-- expanding access to underprivileged communities
+**Open-source release:**
+- CAD files downloadable in step/IGES/STL
+- Assembly documentation
+- Bill of materials with supplier links (India-specific sourcing)
+- Control software stack
+- Educational resources
+
+**Cost-optimized v2 design:**
+- Target: ~₹15,000–20,000 complete
+- 4-DOF maintained
+- Simplified wiring
+- Easier assembly
+- Modular motor/driver selection
 
 ---
 
-# Long-Term Vision
+## What This Project Is Not
 
-OpenArm aims to evolve into a fully open-source robotics platform that enables students, makers, and educators around the world to:
-- learn robotics
-- experiment with control systems
-- build affordable robotic systems
-- contribute to open-source engineering
+Not trying to build an industrial arm, a commercial product, or a research platform that competes with systems costing orders of magnitude more. The goal is something that a motivated high school student or a small school can actually build, understand, and learn from.
 
-The project is under active development and will continue evolving through experimentation, iteration, and community feedback.
+If the project succeeds, it should be useful as:
+- A teaching tool for kinematics and control systems
+- A research platform for studying control algorithm tradeoffs on cheap hardware
+- A starting point for builders who want to understand robotic manipulation from first principles

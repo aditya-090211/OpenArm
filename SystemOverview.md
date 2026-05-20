@@ -1,142 +1,116 @@
-# OpenArm System Overview
+# System Overview — OpenArm
 
-## Introduction
-
-OpenArm is an open-source robotic arm platform currently focused on developing lightweight, modular, and accessible robotic systems for education, experimentation, and research.
-
-The project aims to reduce the complexity and cost of robotic arm systems while maintaining a strong focus on:
-- modularity
-- manufacturability
-- repairability
-- scalability
-- educational accessibility
-
-The long-term goal of OpenArm is to create a robotics platform that can eventually be distributed to schools and students with limited access to advanced robotics education.
+A technical overview of the full OpenArm system architecture. Covers mechanical, electronics, software, and communication layers.
 
 ---
 
-# Current System Architecture
+## Configuration
 
-The current OpenArm prototype is designed as a 4-DOF robotic arm using distributed actuator control and lightweight structural components.
+**Degrees of freedom:** 4 (base rotation + shoulder + elbow + wrist)
 
-## Degrees of Freedom
-
-Current planned configuration:
-1. Base Rotation
-2. Shoulder Joint
-3. Elbow Joint
-4. Wrist Joint
+**Geometry:**
+- L1 = L2 = L3 = 75 mm (shoulder, elbow, wrist links)
+- Total maximum reach: 225 mm
+- Shoulder offset from base rotation axis: 31.64 mm
+- Shoulder height: 55 mm
 
 ---
 
-# Mechanical Architecture
+## Mechanical Architecture
 
-## Structure
+**Structure:** Hybrid PETG-CF printed components + aluminum reinforcement at structural nodes.
 
-The arm currently uses a hybrid structure consisting of:
-- 3D printed PETG components
-- aluminum reinforcement plates and structural members
-- belt-driven transmission systems
+**Joint design:** Each joint uses a shaft supported by deep-groove ball bearings (625ZZ or 606ZZ), driven by an HTD-5M timing belt and pulley reduction.
 
-The current design philosophy prioritizes:
-- low weight
-- simplified assembly
-- reduced part count
-- modular replacement
-- easy manufacturability
+**Motor configuration:**
 
----
+| Joint | Motor | Reduction Ratio |
+|---|---|---|
+| Base | NEMA17 Standard (42×48mm) | 5:1 |
+| Shoulder | NEMA17 Standard (42×48mm) | 5–7:1 |
+| Elbow | NEMA17 Pancake (23mm stack) | 5:1 |
+| Wrist | NEMA17 Pancake (23mm stack) | 3–5:1 |
 
-# Actuator Architecture
+Pancake motors at distal joints reduce mass and rotational inertia where the torque requirement is low.
 
-The current actuator system uses:
-- NEMA17 stepper motors
-- pancake NEMA17 motors for lightweight joints
-- distributed CANBUS-Stepper controllers
-- HTD belt reduction systems
-
-## Current Joint Configuration
-
-| Joint | Motor Type |
-|---|---|
-| Base | Standard NEMA17 |
-| Shoulder | Standard NEMA17 |
-| Elbow | Pancake NEMA17 |
-| Wrist | Pancake NEMA17 |
+See `Research/torque_analysis.md` for torque estimates and `Research/joint_design.md` for bearing and belt selection.
 
 ---
 
-# Electronics Architecture
+## Electronics Architecture
 
-The electronics system is currently based around a distributed actuator architecture.
+```
+Raspberry Pi (high-level controller)
+      |
+   CAN Bus (daisy chain, 120Ω termination at both ends)
+      |
+  ┌───┴──────────────────────────────────┐
+  |         |           |               |
+Joint 1  Joint 2    Joint 3         Joint 4
+(Base)  (Shoulder)  (Elbow)         (Wrist)
 
-Each actuator contains:
-- local motor control
-- CAN communication
-- encoder support
-- integrated actuator electronics
+Each joint: CANBUS-Stepper node
+            ├── ESP32-based MCU
+            ├── Integrated stepper driver
+            ├── CAN transceiver
+            └── Encoder support (AS5600 or AS5047D)
+```
 
-A Raspberry Pi is planned as the high-level control computer for:
-- trajectory control
-- inverse kinematics
-- motion coordination
-- future robotics software integration
+**Power distribution:**
 
----
-
-# Communication System
-
-The current communication architecture is based on:
-- CAN bus communication
-- daisy-chained actuator nodes
-- distributed control
-
-This architecture was selected to improve:
-- scalability
-- wiring simplicity
-- modularity
-- maintainability
+```
+24V PSU (MeanWell LRS-350-24 or equivalent)
+  ├── 10A slow-blow fuse
+  ├── CANBUS-Stepper chain (4 nodes, 24V direct)
+  └── 24V → 5V buck converter → Raspberry Pi
+```
 
 ---
 
-# Control System Research
+## Software Architecture
 
-Current research areas include:
-- PID control systems
-- trajectory planning
-- inverse kinematics
-- distributed robotics systems
-- reinforcement learning for robotic control
+**High-level controller (Raspberry Pi):**
+- Inverse kinematics computation
+- Trajectory planning and interpolation
+- CAN bus communication (motion commands to each joint node)
+- Eventually: encoder feedback processing, closed-loop coordination
 
-One of the long-term research goals of OpenArm is exploring how reinforcement learning compares with traditional PID tuning methods for low-cost robotic arm systems.
+**Joint nodes (CANBUS-Stepper):**
+- Local stepper driver control
+- CAN message parsing and response
+- Encoder reading (future)
+- Local closed-loop control (future)
 
----
+**Simulation (GNU Octave):**
+- Full FK/IK model
+- Heuristic motion planner
+- Collision detection
+- Trajectory visualization
+- Development and validation environment before hardware deployment
 
-# Current Development Priorities
-
-1. Functional actuator testing
-2. Lightweight joint design
-3. Belt reduction optimization
-4. Reliable motion control
-5. Power distribution
-6. System modularity
-7. Manufacturability
-8. Documentation
-
----
-
-# Long-Term Goals
-
-- Fully open-source robotics platform
-- Educational robotics accessibility
-- Low-cost modular robotics
-- Research integration
-- School outreach initiatives
-- Open-source hardware ecosystem
+The simulation and hardware control share the same kinematic math. The Octave implementation serves as the reference model; firmware implementations will follow the same equations.
 
 ---
 
-# Current Status
+## Communication Protocol
 
-OpenArm is currently in the active prototyping and research phase.
-The project continues to evolve through CAD iteration, actuator testing, architecture research, and mechanical prototyping.
+**CAN bus:** Standard 11-bit IDs, 1 Mbit/s.
+
+| Direction | CAN ID | Message |
+|---|---|---|
+| Master → Node | 0x101–0x104 | SET_TARGET_POS, SET_STEP_RATE, SET_CURRENT_LIMIT, STOP |
+| Node → Master | 0x201–0x204 | STATUS (position, temperature, error flags) |
+
+Node IDs: Base=1, Shoulder=2, Elbow=3, Wrist=4.
+
+**Initial control mode:** Open-loop stepping (no encoder feedback), for kinematic validation. Closed-loop PID to follow once encoders are integrated.
+
+---
+
+## Simulation Reference
+
+The simulation implements the full FK/IK pipeline and a Monte Carlo-style motion planner. See `Simulation/README.md` for how to run it and `Simulation/kinematics.md` for the math.
+
+**Current simulation state:** Working. Interactive, 3D, with collision detection and trajectory animation.
+
+**Hardware state:** Not yet fabricated. CAD is in progress in Onshape (link in `CAD/README.md`).
